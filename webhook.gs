@@ -1,5 +1,3 @@
-// webhook.gs
-
 function doPost(e) {
   try {
     const raw = JSON.parse(e.postData.contents);
@@ -23,7 +21,7 @@ function installableOnEdit(e) {
   const sheet = e.source.getActiveSheet();
   const sheetName = sheet.getName();
   
-  // 1. Pastikan hanya jalan di Sheet1
+  // 1. hanya jalan di Sheet1
   if (sheetName !== 'Sheet1') return;
 
   // 2. DEKLARASI VARIABEL (PENTING: Harus di awal agar tidak error)
@@ -34,7 +32,7 @@ function installableOnEdit(e) {
   // 3. PENGECEKAN (Abaikan header/banner baris 1-4)
   if (row <= 4) return;
 
-  // 4. SIAPKAN PAYLOAD
+  // 4. PAYLOAD
   const payload = {
     source: 'sheet',
     row: row,

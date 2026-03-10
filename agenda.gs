@@ -1,20 +1,19 @@
 // @ts-nocheck
-// agenda.gs - REVISED AS HELPER
 
-// --- KOMENTARI BAGIAN INI AGAR TIDAK BENTROK ---
+
+
 // const scriptProperties = PropertiesService.getScriptProperties();
 // const calendarId = scriptProperties.getProperty('CALENDAR_ID');
 // const parentfolderId = scriptProperties.getProperty('PARENT_ID_FOLDER');
 // const ws = SpreadsheetApp.getActiveSheet(); 
-// ----------------------------------------------
+
 
 // Fungsi pembantu untuk UI agar tidak error saat testing backend
 const getUiSafe = () => {
   try { return SpreadsheetApp.getUi(); } catch (e) { return null; }
 };
 
-// Constants (Tetap biarkan karena ini spesifik untuk logika agenda)
-// const WEEKDAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
 const NAME_ARRAY = ['michaelanandya','arifkurnia','rahmatadi','anggitobustan','ridhorisadianto','chandradwi','danannurdiansyah','linamunfaroh'];
 const DOMAIN = "@semarangkota.go.id";
 const FALLBACK_EMAIL = "sandiman_diskominfo" + DOMAIN;
@@ -26,26 +25,14 @@ const COLS = {
   FILE: 14, CHECKBOX: 15, CAL_URL: 16, EVENT_ID: 17
 };
 
-// Fungsi Helper yang akan dipanggil oleh Handler baru
 function getCalendarSafe() {
-  return CalendarApp.getCalendarById(CALENDAR_ID); // Ambil CALENDAR_ID dari global.gs
+  return CalendarApp.getCalendarById(CALENDAR_ID); 
 }
 
 function getParentFolderSafe() {
-  return DriveApp.getFolderById(PARENT_FOLDER_ID); // Ambil dari global.gs
+  return DriveApp.getFolderById(PARENT_FOLDER_ID); 
 }
 
-/** 
- * KOMENTARI installableOnEdit LAMA
- * Karena sekarang pintu masuknya lewat webhook.gs
- */
-/*
-function installableOnEdit(e) {
-  // ... (Logika lama di sini tidak dihapus, hanya dinonaktifkan)
-}
-*/
-
-// --- LOGIKA HELPER YANG TETAP DIPAKAI HANDLER BARU ---
 
 function generateEmails(input) {
   let emailAddresses = [];

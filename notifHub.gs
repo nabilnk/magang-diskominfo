@@ -1,19 +1,21 @@
-// notifHub.gs
 Handlers.notifHub = function(payload) {
-  Logger.log("--- Starting Notification Hub ---");
+  Logger.log("--- Menjalankan Notifikasi Hub ---");
   try {
-    // 1. Ambil template mewah dari Builder
     const messageObj = MessageBuilder.fancyTableTemplate(payload);
 
-    // 2. Eksekusi pengiriman dengan htmlBody (PENTING!)
+    if (!messageObj.to || messageObj.to === "") {
+       Logger.log("⚠️ Penerima kosong, mencoba kirim ke admin.");
+       messageObj.to = Session.getEffectiveUser().getEmail();
+    }
+
     MailApp.sendEmail({
-      to: messageObj.to,
+      to: messageObj.to, 
       subject: messageObj.subject,
-      htmlBody: messageObj.html // Ini yang membuat tampilan seperti Gambar 3
+      htmlBody: messageObj.html
     });
 
-    Logger.log("✅ Notif Mewah terkirim ke: " + messageObj.to);
+    Logger.log("✅ Email Rill Terkirim Ke: " + messageObj.to);
   } catch (error) {
-    Logger.log("❌ Error in notifHub: " + error.message);
+    Logger.log("❌ Gagal mengirim notifikasi: " + error.message);
   }
 };

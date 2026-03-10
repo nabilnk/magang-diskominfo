@@ -1,4 +1,3 @@
-// messageBuilder.gs
 MessageBuilder.fancyTableTemplate = function(payload) {
   const entity = Adapters.toEntity(payload);
   const start = splitDateAndTime(entity.startDate);

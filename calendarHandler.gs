@@ -1,6 +1,3 @@
-// calendarHandler.gs
-var Handlers = Handlers || {};
-
 Handlers.calendarHandler = function(payload) {
   Logger.log("--- Starting Calendar Handler ---");
   const entity = Adapters.toEntity(payload);
@@ -9,20 +6,20 @@ Handlers.calendarHandler = function(payload) {
     const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
     const startTime = new Date(entity.startDate);
     const endTime = new Date(entity.endDate);
-
     const event = calendar.createEvent(entity.title, startTime, endTime, {
       location: entity.location || "",
-      // GUNAKAN FUNGSI DI taskSync.gs UNTUK ISI KONTEN
       description: buildCalendarDescription(entity) 
     });
 
-    // Link URL Base64
-    var eventId = event.getId().split('@')[0];
-    var encodedId = Utilities.base64Encode(eventId + " " + CALENDAR_ID).replace(/=/g, "");
-    payload.calUrl = "https://www.google.com/calendar/event?eid=" + encodedId;
+    const eventId = event.getId();
+    payload._generatedCalId = eventId;
 
-    Logger.log("✅ GCal Created dengan Isi Konten");
+    var cleanId = eventId.split('@')[0];
+    var encoded = Utilities.base64Encode(cleanId + " " + CALENDAR_ID).replace(/=/g, "");
+    payload.calUrl = "https://www.google.com/calendar/event?eid=" + encoded;
+
+    Logger.log("✅ GCal Created dengan Data Rill");
   } catch (error) {
-    Logger.log("❌ Error in calendarHandler: " + error.message);
+    Logger.log("❌ GCal Error: " + error.message);
   }
 };
