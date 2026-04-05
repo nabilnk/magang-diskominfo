@@ -1,21 +1,12 @@
 Handlers.notifHub = function(payload) {
-  Logger.log("--- Menjalankan Notifikasi Hub ---");
+  Logger.log("--- Starting Notification Hub ---");
   try {
+    const entity = Adapters.notification(payload);
     const messageObj = MessageBuilder.fancyTableTemplate(payload);
 
-    if (!messageObj.to || messageObj.to === "") {
-       Logger.log("⚠️ Penerima kosong, mencoba kirim ke admin.");
-       messageObj.to = Session.getEffectiveUser().getEmail();
-    }
-
-    MailApp.sendEmail({
-      to: messageObj.to, 
-      subject: messageObj.subject,
-      htmlBody: messageObj.html
+    entity.picEmailArray.forEach(email => {
+      MailApp.sendEmail({ to: email.trim(), subject: messageObj.subject, htmlBody: messageObj.html });
     });
-
-    Logger.log("✅ Email Rill Terkirim Ke: " + messageObj.to);
-  } catch (error) {
-    Logger.log("❌ Gagal mengirim notifikasi: " + error.message);
-  }
+    Logger.log("✅ Email sent to: " + entity.picEmailArray.join(", "));
+  } catch (e) { Logger.log("❌ Notif Error: " + e.message); }
 };

@@ -1,25 +1,25 @@
+// calendarHandler.gs
 Handlers.calendarHandler = function(payload) {
-  Logger.log("--- Starting Calendar Handler ---");
-  const entity = Adapters.toEntity(payload);
-
+  Logger.log("--- Memproses Calendar ---");
   try {
-    const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
-    const startTime = new Date(entity.startDate);
-    const endTime = new Date(entity.endDate);
-    const event = calendar.createEvent(entity.title, startTime, endTime, {
-      location: entity.location || "",
-      description: buildCalendarDescription(entity) 
+    const config = Adapters.notification(payload); // Gunakan adapter utama
+    const calendar = CalendarApp.getCalendarById('primary'); 
+
+    // 1. BUAT EVENT
+    const event = calendar.createEvent(config.title, new Date(config.startDate), new Date(config.endDate), {
+      location: config.location,
+      description: buildCalendarDescription(config),
+      sendInvites: false
     });
 
-    const eventId = event.getId();
-    payload._generatedCalId = eventId;
+    event.setColor('1'); // Biru
 
-    var cleanId = eventId.split('@')[0];
-    var encoded = Utilities.base64Encode(cleanId + " " + CALENDAR_ID).replace(/=/g, "");
-    payload.calUrl = "https://www.google.com/calendar/event?eid=" + encoded;
-
-    Logger.log("✅ GCal Created dengan Data Rill");
-  } catch (error) {
-    Logger.log("❌ GCal Error: " + error.message);
-  }
+    // 2. SIMPAN HASIL KE REF
+    const eid = event.getId().split('@')[0];
+    payload.ref.calendar_id = eid;
+    payload.ref.calendar_url = "https://www.google.com/calendar/event?eid=" + 
+        Utilities.base64Encode(eid + " " + Session.getEffectiveUser().getEmail()).replace(/=/g, "");
+    
+    Logger.log("✅ GCal Created: " + payload.ref.calendar_url);
+  } catch (e) { Logger.log("❌ Calendar Error: " + e.message); }
 };

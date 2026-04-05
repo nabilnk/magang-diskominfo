@@ -1,6 +1,8 @@
-const Router = {
+// router.gs
+var Router = {
   dispatch(payload) {
-    Logger.log(`[ROUTER] Processing event from: ${payload.source}`);
+    // Gunakan payload.label sesuai arahan mentor
+    Logger.log(`[ROUTER] Processing event from: ${payload.label}`);
     
     const matched = RULES.filter(rule => {
       try {
@@ -8,11 +10,15 @@ const Router = {
       } catch (e) { return false; }
     });
 
+    if (matched.length === 0) {
+      Logger.log("⚠️ No rule matched for label: " + payload.label);
+      return;
+    }
+
     matched.forEach(rule => {
-      Logger.log(`[RULE] Executing: ${rule.id}`);
+      Logger.log(`▶ Executing Rule: ${rule.id}`);
       rule.execute.forEach(handlerName => {
-        if (Handlers[handlerName]) {
-          // Payload Reference: dilempar ke pipeline
+        if (typeof Handlers[handlerName] === 'function') {
           Handlers[handlerName](payload);
         }
       });

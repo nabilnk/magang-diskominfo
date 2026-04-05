@@ -1,34 +1,45 @@
-var Handlers = Handlers || {};
-
+// notionHandler.gs
 Handlers.notionHandler = function(payload) {
-  Logger.log("--- Starting Notion Handler (Two-Way) ---");
-  const entity = Adapters.toEntity(payload);
-  const calUrl = payload.calUrl;
-
+  Logger.log("--- Menjalankan Robot Notion (Full Sync A-T) ---");
   try {
-    if (payload.source === 'notion') {
-      // SKENARIO 1: Update Link ke baris yang sudah ada
-      updatedtoNotion({ pageId: entity.pageId }, calUrl);
-      Logger.log("✅ Notion: Baris yang ada berhasil di-update link-nya.");
+    const calUrl = payload.ref.calendar_url || "";
+    const entity = Adapters.notification(payload);
+
+    if (payload.label === 'notion.sync') {
+      updatedtoNotion({ pageId: entity.pageId || payload.data.id }, calUrl);
     } 
-    else if (payload.source === 'sheet') {
-      // SKENARIO 2: Buat baris BARU di Notion (Karena user input dari Sheet)
-      const newPagePayload = {
+    else if (payload.label === 'sheet.editagenda') {
+      
+    const newPageData = {
         "parent": { "database_id": DATABASE_ID },
         "properties": {
           "Name": { "title": [{ "text": { "content": entity.title } }] },
-          "Scheduled Date": { "date": { "start": entity.startDate } },
+          "Scheduled Date": { "date": { "start": new Date(entity.startDate).toISOString(), "end": new Date(entity.endDate).toISOString() } },
           "SyncGWS": { "select": { "name": "Yes" } },
-          "URL GCalendar": { "url": calUrl || "" }
+          "URL GCalendar": { "url": calUrl },
+          "Status": { "select": { "name": entity.status } },
+          "Priority": { "select": { "name": entity.priority } },
+          "Location": { "rich_text": [{ "text": { "content": entity.location } }] },
+          "PIC": { "rich_text": [{ "text": { "content": entity.person } }] },
+          "Penyelenggara": { "rich_text": [{ "text": { "content": entity.organizer } }] },
+          "Jenis Tugas": { "select": { "name": entity.taskType } },
+          "Source": { "rich_text": [{ "text": { "content": entity.source } }] },
+          
+          // TAMBAHKAN INI: Kirim email dari Sheet ke kolom baru di Notion
+          "Email Penerima": { "email": entity.picEmailsString } 
         }
       };
+
+      const response = notionApiRequest("https://api.notion.com/v1/pages", newPageData, 'POST');
       
-      const response = notionApiRequest("https://api.notion.com/v1/pages", newPagePayload, 'POST');
-      if (response) {
-        Logger.log("✅ Notion: Baris baru berhasil dibuat otomatis dari Sheet.");
+      if (response && response.url) {
+        payload.ref.notion_url = response.url;
+        Logger.log("✅ Notion Created Success: " + response.url);
+      } else {
+        Logger.log("❌ Notion Failed: Cek Log API.");
       }
     }
-  } catch (error) {
-    Logger.log("❌ Error in notionHandler: " + error.message);
+  } catch (e) {
+    Logger.log("❌ Notion Handler Error: " + e.message);
   }
 };

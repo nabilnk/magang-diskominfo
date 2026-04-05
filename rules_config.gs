@@ -1,30 +1,29 @@
 const RULES = [
   {
-    id: "sheet-auto-fill-day",
-    when: "payload.source === 'sheet' && payload.col === 2 && payload.value", 
-    execute: ["uiHelperHandler"] 
+    id: "notion-task-sync",
+    description: "Sinkronisasi tugas dari Notion ke Calendar, Drive, dan Sheet",
+    when: "payload.label === 'notion.sync'",
+    execute: ["calendarHandler", "driveHandler", "notionHandler", "sheetHandler", "notifHub"]
   },
   {
     id: "sheet-agenda-create",
-    when: "payload.source === 'sheet' && payload.col === 15 && payload.value === 'TRUE'",
-    execute: ["driveHandler", "calendarHandler", "sheetHandler", "notifHub"]
+    description: "Sinkronisasi dari Sheet ke GWS & Notion",
+    when: "payload.label === 'sheet.editagenda'",
+    execute: ["driveHandler", "calendarHandler", "notionHandler", "sheetHandler", "notifHub"]
   },
   {
-    id: "sheet-pdf-parse",
-    when: "payload.source === 'sheet' && payload.row === 4 && payload.col === 7 && payload.value === 'TRUE'",
+    id: "SHEET_PDF_PARSE",
+    description: "Parse PDF dari Sheet dan simpan ke Drive",
+    when: "payload.label === 'sheet.pdfparse'",
     execute: ["pdfHandler"]
-  },
-  {
-    id: "notion-task-sync",
-    when: "payload.source === 'notion' && payload.sync === 'Yes'",
-    execute: ["calendarHandler", "driveHandler", "notionHandler", "sheetHandler", "notifHub"]
   }
 ];
 
 const NOTIF_RULES = [
   {
-    id: "sync-notif",
-    when: "payload.calUrl || payload.driveUrl",
+    id: "notif-integrated",
+    // Notif jalan jika di payload.ref sudah ada URL hasil proses
+    when: "payload.ref.calendar_url || payload.ref.drive_url",
     template: "fancyTableTemplate", 
     channels: ["email"]
   }

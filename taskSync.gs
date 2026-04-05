@@ -7,6 +7,7 @@ function getNotionHeaders() {
   };
 }
 
+
 function notionApiRequest(url, payload_dict, method) {
   let options = {
     method: method,
@@ -16,12 +17,14 @@ function notionApiRequest(url, payload_dict, method) {
   };
 
   const response = UrlFetchApp.fetch(url, options);
-  const responseText = response.getContentText();
+  const code = response.getResponseCode();
+  const text = response.getContentText();
   
-  if (response.getResponseCode() === 200) {
-    return JSON.parse(responseText);
+  if (code === 200 || code === 201) {
+    return JSON.parse(text);
   } else {
-    Logger.log(`❌ Notion API Error [${method}]: ` + responseText);
+    // INILAH CCTV ANDA: Jika Notion gagal, baca pesan ini di log Eksekusi
+    Logger.log(`❌ NOTION ERROR [${code}]: ` + text);
     return null;
   }
 }
@@ -74,33 +77,6 @@ function cacheTagMap() {
   return map;
 }
 
-function fetchMasterTagsToSheet() {
-  const masterTagsDatabaseId = scriptProperties.getProperty('MASTER_TAG_DATABASE_ID');
-  if (!masterTagsDatabaseId) {
-    Logger.log("❌ MASTER_TAG_DATABASE_ID tidak ditemukan!");
-    return;
-  }
-  Logger.log("📡 Mengambil daftar Tag dari Notion...");
-  const url = `https://api.notion.com/v1/databases/${masterTagsDatabaseId}/query`;
-  const response = notionApiRequest(url, { page_size: 100 }, 'POST');
-  if (!response || !response.results) {
-    Logger.log("❌ Gagal mengambil data Master Tags.");
-    return;
-  }
-  let ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('MasterTags');
-  if (!sheet) { sheet = ss.insertSheet('MasterTags'); }
-  sheet.clearContents();
-  sheet.appendRow(['ID', 'Nama Tag']);
-  response.results.forEach(page => {
-    const id = page.id;
-    const name = page.properties.Name?.title[0]?.plain_text || "(Untitled)";
-    sheet.appendRow([id, name]);
-  });
-  Logger.log("✅ Sheet 'MasterTags' diperbarui.");
-  cacheTagMap();
-}
-
 function splitDateAndTime(inputDate) {
   if (!inputDate) return { date: "-", hour: "-" };
   const TZ = Session.getScriptTimeZone();
@@ -115,18 +91,18 @@ function buildCalendarDescription(entity) {
   const start = splitDateAndTime(entity.startDate);
   const end = splitDateAndTime(entity.endDate);
   const line = '──────────────────────────';
+
   return [
     `📌 <b><a href="${entity.url}">${entity.title.toUpperCase()}</a></b>`,
     line,
     `📆 <b>Timeline:</b> ${start.date} ${start.hour} → ${end.date} ${end.hour}`,
     `👥 <b>Disposisi:</b> ${entity.person}`,
-    `⭐ <b>Prioritas:</b> ${entity.priorityName}`,
+    `⭐ <b>Prioritas:</b> ${entity.priority}`,
     `💼 <b>Jenis Tugas:</b> ${entity.taskType}`,
-    `⏳ <b>Durasi:</b> ${entity.workTime} hari`,
+    `⏳ <b>Durasi:</b> ${entity.duration} hari`,
     '',
-    `🌐 <b>Sumber:</b> ${entity.sourceContent}`,
-    `📂 <b>Status:</b> ${entity.statusName}`,
-    `🏷️ <b>Tags:</b> ${entity.tagName || '-'}`,
+    `🌐 <b>Sumber:</b> ${entity.source}`,
+    `📂 <b>Status:</b> ${entity.status}`,
     '',
     line,
     `<i>💡 Klik judul untuk membuka tugas di Notion</i>`
@@ -140,3 +116,5 @@ function getStatusColor(statusName) {
     default: return { bg: '#e9d8fd', text: '#805ad5' };
   }
 }
+
+
