@@ -13,10 +13,10 @@ const RULES = [
   },
   {
     id: "SHEET_PDF_PARSE",
-    description: "Parse PDF dari Sheet dan simpan ke Drive",
+    description: "Parsing PDF massal",
     when: "payload.label === 'sheet.pdfparse'",
     execute: ["pdfHandler"]
-  }
+  },
 ];
 
 const NOTIF_RULES = [

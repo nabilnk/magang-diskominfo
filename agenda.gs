@@ -76,3 +76,73 @@ function generateOutputString(title, source, desc, guests, organizer, duty_desc,
   let uppercaseTitle = title.toString().toUpperCase();
   return `🗓️ <b>${uppercaseTitle}</b>\n${line}\n\n<b>DETAILS</b>\n🏢 Penyelenggara : ${organizer}\n🏷️ Label : ${label}\n🌍 Sumber : ${source}\n\n<b>DESCRIPTION</b>\n${desc}\n\n<b>ASSIGNMENT</b>\n💼 Jenis Tugas : ${duty_desc}\n👥 Disposisi : ${guests}\n\n<b>RESOURCES</b>\n🔗 Link/url : ${link_desc}\n📁 Dokumen pendukung : ${file}\n\n${line}\n<i>Auto-notification by system 🤖</i>`;
 }
+
+function pdfToAgenda() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Sheet1");
+  const folder = DriveApp.getFolderById(PARENT_FOLDER_ID);
+  const files = folder.getFilesByType(MimeType.PDF);
+
+  if (!files.hasNext()) throw new Error("File PDF tidak ditemukan di Drive.");
+
+  const pdfFile = files.next();
+  const blob = pdfFile.getBlob();
+  const resource = { title: pdfFile.getName(), mimeType: pdfFile.getMimeType() };
+  
+  // 1. Proses OCR
+  const tempDoc = Drive.Files.insert(resource, blob, { ocr: true });
+  const doc = DocumentApp.openById(tempDoc.id);
+  const text = doc.getBody().getText();
+  Drive.Files.remove(tempDoc.id); 
+
+  const lines = text.split('\n');
+  
+  lines.forEach(line => {
+    // 2. CARI TANGGAL (Contoh: 10/03/2026)
+    const dateMatch = line.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/);
+    
+    if (dateMatch) {
+      const foundDate = dateMatch[0];
+      
+      // Ambil bagian teks SETELAH Tanggal
+      let afterDate = line.substring(line.indexOf(foundDate) + foundDate.length).trim();
+
+      // 3. CARI JAM (Contoh: 08:00 atau 08.00)
+      const timeMatch = afterDate.match(/(\d{1,2}[:.]\d{2})/);
+      let foundTime = "";
+      let remainingContent = afterDate;
+
+      if (timeMatch) {
+        foundTime = timeMatch[0];
+        // Konten utama adalah teks SETELAH Jam
+        remainingContent = afterDate.substring(afterDate.indexOf(foundTime) + foundTime.length).trim();
+      }
+
+      /**
+       * 4. PECAH KONTEN (Judul, Lokasi, Penyelenggara)
+       * KUNCI: Kita hanya memecah jika ada tanda '|' atau spasi SANGAT LEBAR (minimal 4 spasi)
+       * Ini mencegah Judul "Rapat Koordinasi" terbelah.
+       */
+      let parts = remainingContent.split(/[|│]|\s{4,}/).map(p => p.trim()).filter(Boolean);
+
+      let judul = parts[0] || "Agenda dari PDF";
+      let lokasi = parts[1] || "-";
+      let penyelenggara = parts[2] || "-";
+
+      // 5. HITUNG HARI
+      const dParts = foundDate.split(/[\/\-]/);
+      const dObj = new Date(dParts[2], dParts[1]-1, dParts[0]);
+      dObj.setHours(12, 0, 0, 0); 
+      const dayName = WEEKDAYS[dObj.getDay()];
+
+      // 6. TULIS KE SHEET SECARA SEJAJAR (A - K)
+      const targetRow = sheet.getLastRow() + 1;
+      const rowData = [
+        [dayName, foundDate, foundTime, "", "", "PDF SOURCE", "", "Rapat", judul, lokasi, penyelenggara]
+      ];
+
+      sheet.getRange(targetRow, 1, 1, 11).setValues(rowData);
+      Logger.log(`✅ Sukses: ${judul} | Lokasi: ${lokasi}`);
+    }
+  });
+}

@@ -1,22 +1,27 @@
 // pdfHandler.gs
 Handlers.pdfHandler = function(payload) {
   Logger.log("--- Menjalankan Robot PDF Parsing ---");
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Sheet1");
+  
   try {
-    SpreadsheetApp.getActiveSpreadsheet().toast("🤖 Memulai ekstraksi data dari PDF...", "Processing", 5);
+    ss.toast("🤖 Memulai ekstraksi data dari PDF...", "Processing", 5);
+    
+    pdfToAgenda(); // Panggil mesin rill di agenda.gs
 
-    if (typeof pdfToAgenda === 'function') {
-      pdfToAgenda(); // Panggil fungsi di agenda.gs (KEEP)
-      Logger.log("✅ PDF Parsing Selesai.");
-      SpreadsheetApp.getActiveSpreadsheet().toast("Baris agenda baru dari PDF telah ditambahkan!", "Selesai", 5);
-    } else {
-      throw new Error("Fungsi 'pdfToAgenda' tidak ditemukan.");
+    // 7. SIAPKAN CHECKBOX UNTUK DATA BARU
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 4) {
+      // Pasang Checkbox di kolom G (PDF Checklist) dan P (Sync GWS)
+      sheet.getRange(5, 7, lastRow - 4, 1).insertCheckboxes();
+      sheet.getRange(5, 16, lastRow - 4, 1).insertCheckboxes();
     }
-
-    // Matikan kembali checkbox G4
-    SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1").getRange(4, 7).uncheck();
-
+    
+    ss.toast("Selesai! Data sudah masuk ke kolomnya masing-masing.", "Sukses", 5);
   } catch (e) {
-    Logger.log("❌ PDF Error: " + e.message);
-    SpreadsheetApp.getUi().alert("Gagal: " + e.message);
+    SpreadsheetApp.getUi().alert("Gagal memproses PDF: " + e.message);
+  } finally {
+    // Matikan tombol utama di G4
+    sheet.getRange(4, 7).uncheck();
   }
 };
